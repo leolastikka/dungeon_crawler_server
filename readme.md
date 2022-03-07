@@ -38,3 +38,14 @@ GAME_FPS 10
 | MSG_SERVER_MOVE | 8 | [type (uint8), entity id (uint32), pos x (float), pos y (float), vel x (float), vel y (float)] |
 | MSG_SERVER_ACK | 254 | [type (uint8)] |
 | MSG_SERVER_FULL | 255 | [type (uint8)] |
+
+### Messaging flow
+| Client | | Server |
+| - | - | - |
+| MSG_CLIENT_CONNECT | -> | |
+| | <- | MSG_SERVER_CLIENT |
+| | <- | MSG_SERVER_ADD |
+| MSG_CLIENT_INPUT | -> | |
+| | <- | MSG_SERVER_MOVE |
+| MSG_CLIENT_DISCONNECT | -> | |
+| | <- | MSG_SERVER_REMOVE |

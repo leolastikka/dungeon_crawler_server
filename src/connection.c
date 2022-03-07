@@ -280,7 +280,7 @@ void *timeout_thread(void *arg) {
         time_t cur_time = clock();
         client_t *client = shared->clients->first;
         while (client) {
-            // check is client has reached timeout
+            // check if client has reached timeout
             float last_received = (float)((cur_time - client->last_receive_time) / CLOCKS_PER_SEC);
             if (last_received >= shared->timeout_sec) {
                 // send message to game thread to remove player entity
