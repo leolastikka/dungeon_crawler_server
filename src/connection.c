@@ -17,9 +17,6 @@ void *listener_thread(void *arg) {
     uint32_t current_client_id = 1;
     client_t *client;
 
-    int player_y = 0.0f;
-    int player_x = 0.0f;
-
     char buffer[shared->buffer_size];
     struct sockaddr_in cli_addr;
     
