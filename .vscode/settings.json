@@ -4,6 +4,15 @@
         "in.h": "c",
         "unistd.h": "c",
         "time.h": "c",
-        "client.h": "c"
+        "client.h": "c",
+        "cmath": "c",
+        "cstdarg": "c",
+        "cstdio": "c",
+        "cstdlib": "c",
+        "type_traits": "c",
+        "limits": "c",
+        "*.tcc": "c",
+        "cstdint": "c",
+        "typeinfo": "c"
     }
 }

@@ -2,6 +2,7 @@
 #include "connection.h"
 #include "message.h"
 #include "shared.h"
+#include "utility.h"
 
 #include <netinet/in.h>
 #include <stdio.h>
@@ -47,6 +48,7 @@ void *listener_thread(void *arg) {
             if (client_list_full(shared->clients)) {
                 printf("Client trying to join full server\n");
                 msg_t *msg = (msg_t *)malloc(sizeof(msg_t));
+                check_malloc(msg);
                 msg->type = MSG_SERVER_FULL;
                 msg->flags = 0;
                 msg->next = NULL;
@@ -54,6 +56,7 @@ void *listener_thread(void *arg) {
 
                 // create dummy client for replying
                 client_t *client = (client_t *)malloc(sizeof(client_t));
+                check_malloc(client);
                 client->id = 0;
                 client->address = cli_addr.sin_addr.s_addr;
                 client->port = cli_addr.sin_port;
@@ -85,6 +88,7 @@ void *listener_thread(void *arg) {
         // construct message(s) and push to queue(s)
         if (type == MSG_CLIENT_INPUT) {
             msg_t *msg = (msg_t *)malloc(sizeof(msg_t));
+            check_malloc(msg);
             msg->type = MSG_CLIENT_INPUT;
             msg->flags = 0;
             msg->next = NULL;
@@ -92,6 +96,7 @@ void *listener_thread(void *arg) {
 
             uint8_t dgram_data = buffer[5];
             int8_t *data = (int8_t *)malloc(3);
+            check_malloc(data);
             memset(data, 0, 3);
             if (dgram_data & MSG_INPUT_X_POS) data[0] += 1;
             if (dgram_data & MSG_INPUT_X_NEG) data[0] -= 1;
@@ -105,6 +110,7 @@ void *listener_thread(void *arg) {
         }
         else if (type == MSG_CLIENT_KEEPALIVE) {
             msg_t *msg = (msg_t *)malloc(sizeof(msg_t));
+            check_malloc(msg);
             msg->type = MSG_SERVER_ACK;
             msg->flags = 0;
             msg->next = NULL;
@@ -115,6 +121,7 @@ void *listener_thread(void *arg) {
         }
         else if (type == MSG_CLIENT_CONNECT) {
             msg_t *msg = (msg_t *)malloc(sizeof(msg_t));
+            check_malloc(msg);
             msg->type = MSG_SERVER_CLIENT;
             msg->flags = 0;
             msg->next = NULL;
@@ -128,6 +135,7 @@ void *listener_thread(void *arg) {
         }
         else if (type == MSG_CLIENT_DISCONNECT) {
             msg_t *msg = (msg_t *)malloc(sizeof(msg_t));
+            check_malloc(msg);
             msg->type = MSG_SERVER_REMOVE;
             msg->flags = 0;
             msg->next = NULL;
@@ -157,13 +165,12 @@ void *sender_thread(void *arg) {
     printf("Sender thread running\n");
     while(1) {
         msg_queue_fetch_safe(&mq_sender, shared->mq_out);
-        if (mq_sender.size == 0) {
+        if (!mq_sender.size) {
             continue;
         }
 
-        msg_t *msg, *next;
-        do {
-            msg = msg_queue_pop_first(&mq_sender);
+        msg_t *msg = msg_queue_pop_first(&mq_sender);
+        while (msg) {
             // if (!msg->client) {
             //     printf("Client removed before send msg %d\n", msg->type);
             //     next = msg->next;
@@ -205,7 +212,6 @@ void *sender_thread(void *arg) {
             else if(msg->type == MSG_SERVER_FULL) {
                 buffer[0] = msg->type;
                 buffer_size += sizeof(msg->type);
-                free(msg->client); // free dummy client
             }
             else if (msg->type == MSG_SERVER_CLIENT) {
                 uint32_t *data = (uint32_t *)msg->data;
@@ -233,7 +239,12 @@ void *sender_thread(void *arg) {
                     (const struct sockaddr *)&addr_cli,
                     sizeof(addr_cli)
                 );
-                // printf("sent msg %d\n", msg->type);
+                // printf("sent msg %d len %d\n", msg->type, buffer_size);
+
+                if (msg->type == MSG_SERVER_FULL) {
+                    free(msg->client); // free dummy client
+                    msg->client = NULL;
+                }
             }
             else if (msg->flags | MSG_FLAG_BROADCAST) {
                 pthread_mutex_lock(shared->clients->lock);
@@ -261,9 +272,8 @@ void *sender_thread(void *arg) {
                 pthread_mutex_unlock(shared->clients->lock);
             }
 
-            next = msg->next;
             msg_free(msg);
-            msg = next;
+            msg = msg_queue_pop_first(&mq_sender);
         } while (msg);
     }
 }
@@ -285,6 +295,7 @@ void *timeout_thread(void *arg) {
             if (last_received >= shared->timeout_sec) {
                 // send message to game thread to remove player entity
                 msg_t *msg = (msg_t *)malloc(sizeof(msg_t));
+                check_malloc(msg);
                 msg->type = MSG_SERVER_REMOVE;
                 msg->flags = 0;
                 msg->next = NULL;
@@ -296,6 +307,7 @@ void *timeout_thread(void *arg) {
                 printf("Timeout client %d\n", client->id);
                 client_t *next = client->next;
                 client_list_remove(shared->clients, client->id);
+
                 // continue looping
                 client = next;
             }

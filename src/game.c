@@ -2,6 +2,7 @@
 #include "entity.h"
 #include "message.h"
 #include "shared.h"
+#include "utility.h"
 #include "world.h"
 
 #include <stdio.h>
@@ -62,45 +63,50 @@ void *game_thread(void *arg) {
                 }
                 else if (msg->type == MSG_SERVER_CLIENT) {
                     // add client entity to entities
-                    entity_t *player = entity_list_add(
+                    entity_t *player_entity = entity_list_add(
                         &entities,
                         current_entity_id++,
                         ENTITY_PLAYER,
                         world.start_pos
                     );
 
+                    // create and init data for new player
                     player_data_t *player_data = (player_data_t *)malloc(sizeof(player_data_t));
+                    check_malloc(player_data);
                     player_data->input_x = 0;
                     player_data->input_y = 0;
                     player_data->input_r = 0;
                     vec_2d_t vel = {0.0f, 0.0f};
                     player_data->vel = vel;
                     player_data->speed = 1.0f;
-                    player->data = player_data;
+                    player_entity->data = player_data;
 
-                    msg->client->entity = player; // unsafe client access?
-                    uint32_t *msg_data = msg->data;
-                    msg_data[1] = player->id; // [cid, eid]
+                    msg->client->entity = player_entity; // unsafe client access?
+                    uint32_t *msg_data = (uint32_t *)msg->data;
+                    msg_data[1] = player_entity->id; // [cid, eid]
 
                     // broadcast added entity
                     msg_t *e_msg = (msg_t *)malloc(sizeof(msg_t));
+                    check_malloc(e_msg);
                     e_msg->type = MSG_SERVER_ADD;
                     e_msg->flags = MSG_FLAG_BROADCAST;
                     e_msg->client = NULL;
                     e_msg->next = NULL;
 
                     char *data = (char *)malloc(13);
+                    check_malloc(data);
                     data[0] = ENTITY_CHARACTER; // entity type
-                    memcpy(&data[1], &player->id, 4); // eid
-                    memcpy(&data[5], &player->pos.x, 4); // pos x
-                    memcpy(&data[9], &player->pos.y, 4); // pos y
+                    memcpy(&data[1], &player_entity->id, 4); // eid
+                    memcpy(&data[5], &player_entity->pos.x, 4); // pos x
+                    memcpy(&data[9], &player_entity->pos.y, 4); // pos y
                     e_msg->data = data;
 
                     msg_queue_push_last_safe(shared->mq_out, e_msg);
 
                     // push same message to mq_out, don't free it here
+                    msg->next = NULL; // remove reference to previous queue messages
                     msg_queue_push_last_safe(shared->mq_out, msg);
-                    msg = msg->next;
+                    msg = msg_queue_pop_first(&mq_game);
                     continue;
                 }
                 else if (msg->type == MSG_SERVER_REMOVE) {
@@ -114,9 +120,8 @@ void *game_thread(void *arg) {
                     exit(EXIT_FAILURE);
                 }
 
-                msg_t *msg_next = msg->next;
                 msg_free(msg);
-                msg = msg_next;
+                msg = msg_queue_pop_first(&mq_game);
             }
         }
 

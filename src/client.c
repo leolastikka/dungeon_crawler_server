@@ -1,4 +1,5 @@
 #include "client.h"
+#include "utility.h"
 
 #include <stdlib.h>
 #include <time.h>
@@ -12,11 +13,13 @@ int client_list_full(client_list_t *clients) {
 
 client_t *client_list_add_safe(client_list_t *clients, uint32_t cid, uint32_t addr, uint16_t port) {
     client_t *client = (client_t *)malloc(sizeof(client_t));
+    check_malloc(client);
     client->id = cid;
     client->address = addr;
     client->port = port;
     client->last_receive_time = clock();
     client->next = NULL;
+    client->entity = NULL;
 
     pthread_mutex_lock(clients->lock);
 

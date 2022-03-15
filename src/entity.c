@@ -1,9 +1,11 @@
 #include "entity.h"
+#include "utility.h"
 
 #include <stdlib.h>
 
 entity_t *entity_list_add(entity_list_t *entities, uint32_t eid, uint8_t type, vec_2d_t pos) {
     entity_t *entity = (entity_t *)malloc(sizeof(entity_t));
+    check_malloc(entity);
     entity->id = eid;
     entity->type = type;
     entity->flags = 0;

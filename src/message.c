@@ -43,13 +43,13 @@ void msg_queue_fetch_safe(msg_queue_t *to, msg_queue_t *from) {
     }
     if (to->size == 0) {
         to->first = from->first;
-        to->last = from->last;
         to->size = from->size;
     }
     else {
         to->last->next = from->first;
         to->size += from->size;
     }
+    to->last = from->last;
     from->first = NULL;
     from->last = NULL;
     from->size = 0;

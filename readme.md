@@ -11,6 +11,8 @@ cd dungeon_crawler_server
 make
 ./build/server
 ```
+Server is currently compiled with debugging information (-g flag in makefile) to be used with gdb.
+
 ## Configuration and API
 Server configuration in main.c:
 ```
@@ -22,7 +24,7 @@ GAME_FPS 10
 ```
 
 ### Client messages
-| name |type | data (datatype) |
+| name |type | data |
 | - | - | - |
 | MSG_CLIENT_CONNECT | 1 | [type (uint8), client id (uint32)] |
 | MSG_CLIENT_DISCONNECT | 2 | [type (uint8), client id (uint32)] |
@@ -30,7 +32,7 @@ GAME_FPS 10
 | MSG_CLIENT_INPUT | 4 | [type (uint8), client id (uint32), input bits (uint8)] |
 
 ### Server messages
-| name |type | data (datatype) |
+| name |type | data |
 | - | - | - |
 | MSG_SERVER_CLIENT | 5 | [type (uint8), client id (uint32), entity id (uint32)] |
 | MSG_SERVER_ADD | 6 | [type (uint8), entity type (uint8), entity id (uint32), pos x (float), pos y (float)] |
